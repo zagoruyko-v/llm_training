@@ -4,7 +4,7 @@
 
 lint:
 	@echo 'Running linters (ruff, black, isort)...'
-	ruff .
+	ruff check .
 	black --check .
 	isort --check-only .
 
