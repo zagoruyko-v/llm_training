@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-test-lint:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: llm_admin
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=5
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: llm_admin
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      OLLAMA_HOST: localhost
+      OLLAMA_PORT: 11434
+      DEFAULT_MODEL: mistral
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pre-commit black ruff isort pytest
+      - name: Install Django admin dependencies
+        run: |
+          pip install -r admin/requirements.txt
+      - name: Install frontend dependencies
+        run: |
+          cd frontend && npm ci
+      - name: Lint and format check
+        run: |
+          make lint
+      - name: Run backend tests
+        run: |
+          pytest
+      - name: Run Django admin tests
+        run: |
+          cd admin && python manage.py test
+      - name: Build backend Docker image
+        run: |
+          docker build -t llm-backend .
+      - name: Build frontend Docker image
+        run: |
+          cd frontend && docker build -t llm-frontend .
+      - name: Health check (backend)
+        run: |
+          docker run -d -p 8000:8000 --name test-backend llm-backend
+          sleep 10
+          curl -f http://localhost:8000/health
+          docker stop test-backend
+          docker rm test-backend
+      - name: Health check (frontend)
+        run: |
+          docker run -d -p 3000:80 --name test-frontend llm-frontend
+          sleep 5
+          curl -f http://localhost:3000
+          docker stop test-frontend
+          docker rm test-frontend

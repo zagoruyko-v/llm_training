@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Docker
+*.pid
+*.sock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+
+# Build
+build/
+*.egg-info/
+
+# Frontend
+frontend/dist/
+frontend/node_modules/
+
+# Misc
+*.swp
